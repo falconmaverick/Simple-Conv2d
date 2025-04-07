@@ -4,17 +4,17 @@ from tensorflow.keras.datasets import mnist
 import matplotlib.pyplot as plt
 
 # Problem 9: Research into Famous Image Recognition Models
-# - **AlexNet (2012)**: Introduced deep convolutional networks for image classification and won the ImageNet challenge.
-# - **VGG16 (2014)**: A deep CNN architecture with 16 layers, known for its simplicity and effectiveness.
-# - **ResNet (2015)**: Introduced residual learning to solve the vanishing gradient problem, allowing very deep networks.
-# - **Inception (GoogLeNet, 2014)**: Used multi-scale convolutional filters within a single layer to improve efficiency.
-# - **EfficientNet (2019)**: Optimized network width, depth, and resolution scaling to achieve better performance with fewer parameters.
+# - AlexNet (2012): Introduced deep convolutional networks for image classification and won the ImageNet challenge.
+# - VGG16 (2014): A deep CNN architecture with 16 layers, known for its simplicity and effectiveness.
+# - ResNet (2015): Introduced residual learning to solve the vanishing gradient problem, allowing very deep networks.
+# - Inception (GoogLeNet, 2014): Used multi-scale convolutional filters within a single layer to improve efficiency.
+# - EfficientNet (2019): Optimized network width, depth, and resolution scaling to achieve better performance with fewer parameters.
 
-# ## Problem 11: Investigation into Filter Size
-# - **Why 3x3 Filters?**
+# Problem 11: Investigation into Filter Size
+# - Why 3x3 Filters?
 #   - More efficient than larger filters while still capturing spatial features.
 #   - Stacking multiple 3x3 layers provides the same receptive field as larger filters but with fewer parameters.
-# - **Effect of 1x1 Filters:**
+# - Effect of 1x1 Filters:
 #   - Used for dimensionality reduction without affecting spatial resolution.
 #   - Helps in feature recombination, allowing better information flow in networks like GoogLeNet.
 
@@ -80,9 +80,17 @@ class Conv2d:
                     for j in range(W_out):
                         h_start = i * self.stride
                         w_start = j * self.stride
-                        out[n, m, i, j] = np.sum(
-                            self.X[n, :, h_start:h_start+Fh, w_start:w_start+Fw] * self.weights[m]
-                        ) + self.biases[m]
+                        
+                        # Ensure slice boundaries are within input dimensions:
+                        h_end = min(h_start + Fh, H)
+                        w_end = min(w_start + Fw, W)
+                        
+                        # Slice input and filter to have the same shape:
+                        X_slice = self.X[n, :, h_start:h_end, w_start:w_end]
+                        weights_slice = self.weights[m, :, :X_slice.shape[1], :X_slice.shape[2]]
+                        
+                        out[n, m, i, j] = np.sum(X_slice * weights_slice) + self.biases[m]
+                        
         return np.maximum(0, out)  # ReLU Activation
 
     def calculate_parameters(self):
@@ -170,9 +178,8 @@ cnn = Conv2d(in_channels=1, out_channels=6, kernel_size=(3, 3), stride=2, paddin
 output = cnn.forward(x_sample)
 print(f"Output shape with stride 2 and padding 1: {output.shape}")
 
-
 # Problem 10: Final Output of Convolution Layers
-print("Output Size and Parameters for Convolutional Layers:")
+print("\nOutput Size and Parameters for Convolutional Layers:")
 for i, (input_size, in_channels, filter_size, out_channels, stride, padding) in enumerate(conv_layers, 1):
     output_size = calculate_output_size(input_size, filter_size, stride, padding)
     num_params = calculate_parameters(in_channels, out_channels, filter_size)
@@ -181,7 +188,7 @@ for i, (input_size, in_channels, filter_size, out_channels, stride, padding) in 
 # Problem 11: Full Functionality Test
 print("\nProblem 11: Full Functionality Test")
 
-# complete CNN forward pass on the sample image
+# Complete CNN forward pass on the sample image
 cnn_test = SimpleCNN()
 final_output = cnn_test.forward(x_sample)
 print(f"Final Output shape after two convolutional layers: {final_output.shape}")
